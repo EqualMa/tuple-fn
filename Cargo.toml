@@ -1,6 +1,6 @@
 [package]
-name = "tuple-fn" # replace version
-version = "0.1.0"
+name = "tuple-fn"
+version = "0.1.0" # replace version
 edition = "2021"
 description = "call functions and closures with tuple of arguments"
 license = "MIT"
