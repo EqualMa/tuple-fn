@@ -1,7 +1,19 @@
 [package]
-name = "tuple-fn"
+name = "tuple-fn" # replace version
 version = "0.1.0"
 edition = "2021"
+description = "call functions and closures with tuple of arguments"
+license = "MIT"
+authors = [
+    "Equal Ma <equalma@outlook.com>",
+]
+homepage = "https://github.com/EqualMa/tuple-fn"
+repository = "https://github.com/EqualMa/tuple-fn"
+keywords = [
+    "tuple",
+    "fn",
+    "call",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
