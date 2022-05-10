@@ -22,6 +22,176 @@
 //! all corresponding `FnOnce`, `FnMut`, `Fn` types and act like extension traits.
 //! They are named as `TupleFn*` just for simplicity.
 
+pub trait KnownFnPointer: TupleFn<Self::ArgsTuple> {
+    /// The type of arguments tuple of this `fn` pointer.
+    /// For example, the following types in each pair are equivalent.
+    ///
+    /// ```
+    /// # trait TupleSameType {} impl<T> TupleSameType for (T, T) {}
+    /// # enum SameType<T1, T2> where (T1, T2): TupleSameType { Yes, T1(T1), T2(T2) }
+    /// # use tuple_fn::KnownFnPointer;
+    /// # SameType::<
+    ///     <fn() -> String as KnownFnPointer>::ArgsTuple
+    /// #     ,
+    ///     ()
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32) -> String as KnownFnPointer>::ArgsTuple
+    /// #     ,
+    ///     (i32,)
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32, bool) -> String as KnownFnPointer>::ArgsTuple
+    /// #     ,
+    ///     (i32, bool)
+    /// # >::Yes;
+    /// ```
+    type ArgsTuple;
+
+    /// The type of the `fn` pointer which accepts corresponding references of arguments.
+    /// For example, the following types in each pair are equivalent.
+    ///
+    /// ```
+    /// # trait TupleSameType {} impl<T> TupleSameType for (T, T) {}
+    /// # enum SameType<T1, T2> where (T1, T2): TupleSameType { Yes, T1(T1), T2(T2) }
+    /// # use tuple_fn::KnownFnPointer;
+    /// # SameType::<
+    ///     <fn() -> String as KnownFnPointer>::FnPointerWithRefArgs
+    /// #     ,
+    ///     fn() -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32) -> String as KnownFnPointer>::FnPointerWithRefArgs
+    /// #     ,
+    ///     fn(&i32) -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32, bool) -> String as KnownFnPointer>::FnPointerWithRefArgs
+    /// #     ,
+    ///     fn(&i32, &bool) -> String
+    /// # >::Yes;
+    /// ```
+    type FnPointerWithRefArgs;
+
+    /// The corresponding `dyn FnOnce` type.
+    /// For example, the following types in each pair are equivalent.
+    ///
+    /// ```
+    /// # trait TupleSameType {} impl<T: ?Sized> TupleSameType for (*const T, *const T) {}
+    /// # enum SameType<T1: ?Sized, T2: ?Sized> where (*const T1, *const T2): TupleSameType { Yes, T1(*const T1), T2(*const T2) }
+    /// # use tuple_fn::KnownFnPointer;
+    /// # SameType::<
+    ///     <fn() -> String as KnownFnPointer>::DynFnOnce
+    /// #     ,
+    ///     dyn FnOnce() -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32) -> String as KnownFnPointer>::DynFnOnce
+    /// #     ,
+    ///     dyn FnOnce(i32) -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32, bool) -> String as KnownFnPointer>::DynFnOnce
+    /// #     ,
+    ///     dyn FnOnce(i32, bool) -> String
+    /// # >::Yes;
+    /// ```
+    type DynFnOnce: ?Sized;
+
+    /// The corresponding `dyn DynFnMut` type.
+    /// For example, the following types in each pair are equivalent.
+    ///
+    /// ```
+    /// # trait TupleSameType {} impl<T: ?Sized> TupleSameType for (*const T, *const T) {}
+    /// # enum SameType<T1: ?Sized, T2: ?Sized> where (*const T1, *const T2): TupleSameType { Yes, T1(*const T1), T2(*const T2) }
+    /// # use tuple_fn::KnownFnPointer;
+    /// # SameType::<
+    ///     <fn() -> String as KnownFnPointer>::DynFnMut
+    /// #     ,
+    ///     dyn FnMut() -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32) -> String as KnownFnPointer>::DynFnMut
+    /// #     ,
+    ///     dyn FnMut(i32) -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32, bool) -> String as KnownFnPointer>::DynFnMut
+    /// #     ,
+    ///     dyn FnMut(i32, bool) -> String
+    /// # >::Yes;
+    /// ```
+    type DynFnMut: ?Sized;
+
+    /// The corresponding `dyn DynFn` type.
+    /// For example, the following types in each pair are equivalent.
+    ///
+    /// ```
+    /// # trait TupleSameType {} impl<T: ?Sized> TupleSameType for (*const T, *const T) {}
+    /// # enum SameType<T1: ?Sized, T2: ?Sized> where (*const T1, *const T2): TupleSameType { Yes, T1(*const T1), T2(*const T2) }
+    /// # use tuple_fn::KnownFnPointer;
+    /// # SameType::<
+    ///     <fn() -> String as KnownFnPointer>::DynFn
+    /// #     ,
+    ///     dyn Fn() -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32) -> String as KnownFnPointer>::DynFn
+    /// #     ,
+    ///     dyn Fn(i32) -> String
+    /// # >::Yes;
+    ///
+    /// # SameType::<
+    ///     <fn(i32, bool) -> String as KnownFnPointer>::DynFn
+    /// #     ,
+    ///     dyn Fn(i32, bool) -> String
+    /// # >::Yes;
+    /// ```
+    type DynFn: ?Sized;
+}
+
+pub trait KnownTuple<'a> {
+    /// The corresponding tuple type which references each item.
+    ///
+    /// ```
+    /// use tuple_fn::KnownTuple;
+    ///
+    /// let _: <() as KnownTuple>::RefTuple = ();
+    /// let _: <(i32,) as KnownTuple>::RefTuple = (&1,);
+    /// let _: <(i32, bool) as KnownTuple>::RefTuple = (&1, &true);
+    /// let _: <(i32, bool, &u8) as KnownTuple>::RefTuple = (&1, &true, &&0u8);
+    /// ```
+    type RefTuple: 'a + KnownTuple<'a>;
+
+    /// The `fn` pointer type which accepts this tuple as arguments and returns `()`.
+    /// For example, the following types in each pair are equivalent.
+    ///
+    /// ```
+    /// # trait TupleSameType {} impl<T> TupleSameType for (T, T) {}
+    /// # enum SameType<T1, T2> where (T1, T2): TupleSameType { Yes, T1(T1), T2(T2) }
+    /// # use tuple_fn::KnownTuple;
+    /// # SameType::<
+    /// <() as KnownTuple>::FnPointer, fn()
+    /// # >::Yes;
+    /// # SameType::<
+    /// <(i32,) as KnownTuple>::FnPointer, fn(i32)
+    /// # >::Yes;
+    /// # SameType::<
+    /// <(i32, bool) as KnownTuple>::FnPointer, fn(i32, bool)
+    /// # >::Yes;
+    /// ```
+    type FnPointer: KnownFnPointer<ArgsTuple = Self>;
+}
+
 /// Enables the types which implements [`FnOnce`] to be called with arguments tuple.
 ///
 /// ```
@@ -98,6 +268,21 @@ pub trait TupleFn<Args>: TupleFnMut<Args> {
 macro_rules! impl_for_tuples {
     ($( ( $($t:ident,)* ) )+) => {
         $(
+            impl<R, $($t,)*> KnownFnPointer for fn($($t,)*) -> R {
+                type ArgsTuple = ($($t,)*);
+
+                type FnPointerWithRefArgs = fn($(&$t,)*) -> R;
+
+                type DynFnOnce = dyn FnOnce($($t,)*) -> R;
+                type DynFnMut = dyn FnMut($($t,)*) -> R;
+                type DynFn = dyn Fn($($t,)*) -> R;
+            }
+
+            impl<'a, $($t: 'a,)*> KnownTuple<'a> for ($($t,)*) {
+                type RefTuple = ($(&'a $t,)*);
+                type FnPointer = fn($($t,)*);
+            }
+
             impl<R, T: FnOnce( $($t,)* ) -> R, $($t,)*> TupleFnOnce<($($t,)*)> for T {
                 type TupleFnOutput = R;
 
