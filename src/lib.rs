@@ -190,6 +190,14 @@ pub trait KnownTuple<'a> {
     /// # >::Yes;
     /// ```
     type FnPointer: KnownFnPointer<ArgsTuple = Self>;
+
+    /// Convert ref of tuple to tuple of refs.
+    ///
+    /// ```
+    /// # use tuple_fn::KnownTuple;
+    /// let _: (&i8, &String) = (1, "hello".to_string()).as_tuple_of_refs();
+    /// ```
+    fn as_tuple_of_refs(&'a self) -> Self::RefTuple;
 }
 
 /// Enables the types which implements [`FnOnce`] to be called with arguments tuple.
@@ -281,6 +289,12 @@ macro_rules! impl_for_tuples {
             impl<'a, $($t: 'a,)*> KnownTuple<'a> for ($($t,)*) {
                 type RefTuple = ($(&'a $t,)*);
                 type FnPointer = fn($($t,)*);
+
+                fn as_tuple_of_refs(&'a self) -> Self::RefTuple {
+                    #[allow(non_snake_case)]
+                    let ($($t,)*) = self;
+                    ($($t,)*)
+                }
             }
 
             impl<R, T: FnOnce( $($t,)* ) -> R, $($t,)*> TupleFnOnce<($($t,)*)> for T {
@@ -394,6 +408,27 @@ mod tests {
         assert_eq!(
             call_fn_once.call_with_args_tuple((|v| v, ("world",))),
             "world"
+        );
+    }
+
+    #[test]
+    fn ref_args_works() {
+        fn call_fn_with_ref_args<'a, Args: 'a + KnownTuple<'a>, F: TupleFnOnce<Args::RefTuple>>(
+            func: F,
+            args: &'a Args,
+        ) -> F::TupleFnOutput {
+            func.call_once_with_args_tuple(args.as_tuple_of_refs())
+        }
+
+        assert_eq!(call_fn_with_ref_args(|| 1, &()), 1);
+        assert_eq!(call_fn_with_ref_args(|v| v, &(2,)), &2);
+        assert_eq!(call_fn_with_ref_args(|v| v + 1, &(2,)), 3);
+        assert_eq!(
+            call_fn_with_ref_args(
+                |v, add: &bool| if *add { v + 1 } else { v - 1 },
+                &(5, false)
+            ),
+            4
         );
     }
 }
