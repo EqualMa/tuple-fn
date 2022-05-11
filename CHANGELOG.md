@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/EqualMa/tuple-fn/compare/v1.1.0...v1.2.0) (2022-05-11)
+
+
+### Features
+
+* KnownTuple::as_tuple_of_refs ([31ad0f3](https://github.com/EqualMa/tuple-fn/commit/31ad0f3c71ffaba29b948a184d26c1000823c793))
+
 # [1.1.0](https://github.com/EqualMa/tuple-fn/compare/v1.0.0...v1.1.0) (2022-05-10)
 
 
